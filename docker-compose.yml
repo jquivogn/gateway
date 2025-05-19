@@ -1,0 +1,73 @@
+
+version: '3'
+
+services:
+  # API Gateway avec FastAPI
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./api-gateway:/app
+      - ./certs:/certs
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/gateway
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET=your_secure_jwt_secret
+    networks:
+      - gateway-net
+      - app-net
+
+  # Base de données pour stocker les utilisateurs et autres informations
+  postgres:
+    image: postgres:14
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=gateway
+    networks:
+      - gateway-net
+  
+  # Redis pour le cache et les sessions
+  redis:
+    image: redis:alpine
+    volumes:
+      - redis-data:/data
+    networks:
+      - gateway-net
+
+  # Application 1 (exemple avec Django)
+  app1:
+    build: ./app1
+    volumes:
+      - ./app1:/app
+    networks:
+      - app-net
+    environment:
+      - APP_ENV=production
+  
+  # Application 2 (exemple avec une autre application Python)
+  app2:
+    build: ./app2
+    volumes:
+      - ./app2:/app
+    networks:
+      - app-net
+    environment:
+      - APP_ENV=production
+
+networks:
+  gateway-net:
+    driver: bridge
+  app-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
